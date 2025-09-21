@@ -7,7 +7,7 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, filters
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 
 # Use environment variable for credentials (more secure)
-credentials_json = os.environ.get("GOOGLE_CREDENTIALS")
+credentials_json = os.environ.get("credentials.json")
 if credentials_json:
     # For Render environment variable
     import json
@@ -74,3 +74,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
