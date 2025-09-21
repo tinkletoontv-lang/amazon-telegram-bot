@@ -5,40 +5,36 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 from google.oauth2.service_account import Credentials
 
-# Initialize global variables
+# Global variable for Google Sheet
 sheet = None
 
 def setup_google_sheets():
     global sheet
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-
     try:
         print("🔧 Setting up Google Sheets connection...")
-
+        
         # Get credentials from environment variable
         credentials_json = os.environ.get("GOOGLE_CREDENTIALS")
-
         if not credentials_json:
-            print("❌ GOOGLE_CREDENTIALS environment variable not set!")
+            print("❌ GOOGLE_CREDENTIALS not set!")
             return False
-
+            
         print("✅ GOOGLE_CREDENTIALS found")
-
-        # Parse JSON from environment variable
+        
+        # Parse the JSON
         creds_dict = json.loads(credentials_json)
-
-        # Use modern google-auth library
+        
+        # Setup scope and credentials
+        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
         creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
-
-        print("🔑 Credentials loaded, authorizing...")
+        
+        # Authorize and connect
         client = gspread.authorize(creds)
-        print("✅ Authorized with Google Sheets API")
-
-        # Open your sheet
         sheet = client.open("product_list").sheet1
+        
         print("✅ Successfully connected to Google Sheets")
         return True
-
+        
     except Exception as e:
         print(f"❌ Error setting up Google Sheets: {e}")
         import traceback
@@ -54,77 +50,59 @@ async def get_product(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     product_number = update.message.text.strip()
-
+    
     try:
         records = sheet.get_all_records()
-
+        
         for row in records:
-            # Check multiple possible column names
-            product_no = str(
-                row.get("product_no", "")
-                or row.get("Product No", "")
-                or row.get("product_number", "")
-                or row.get("Product Number", "")
-            ).strip()
-
+            # Check for product number in various column names
+            product_no = str(row.get("product_no", "") or 
+                           row.get("Product No", "") or 
+                           row.get("product_number", "") or 
+                           row.get("Product Number", "")).strip()
+            
             if product_no == product_number:
-                link = (
-                    row.get("product_link", "")
-                    or row.get("Product Link", "")
-                    or row.get("link", "")
-                    or row.get("URL", "")
-                    or row.get("url", "")
-                )
-
+                link = row.get("product_link", "") or row.get("link", "") or row.get("URL", "")
+                
                 if link:
-                    product_name = (
-                        row.get("product_name", "")
-                        or row.get("Product Name", "")
-                        or row.get("name", "")
-                        or row.get("Name", "")
-                        or f"Product {product_number}"
-                    )
-                    message = f"✅ Here is your product link:\n\n"
-                    message += f"📦 Product: {product_name}\n"
-                    message += f"🔢 Number: {product_number}\n"
-                    message += f"🔗 Link: {link}"
-
-                    await update.message.reply_text(message)
+                    await update.message.reply_text(f"✅ Here is your product link:\n\n🔗 {link}")
                 else:
                     await update.message.reply_text("❌ Link not found for this product!")
                 return
-
+        
         await update.message.reply_text("❌ Product not found! Please check the product number.")
-
+        
     except Exception as e:
         await update.message.reply_text("⚠️ Error accessing product database. Please try again later.")
         print(f"Error: {e}")
 
 def main():
     print("🚀 Starting Telegram Bot...")
-
+    
+    # Check if BOT_TOKEN is set
     token = os.environ.get("BOT_TOKEN")
     if not token:
         print("❌ Error: BOT_TOKEN environment variable not set!")
         return
-
+    
+    # Setup Google Sheets
     if not setup_google_sheets():
         print("❌ Failed to setup Google Sheets. Bot will not start.")
         return
-
+    
     try:
-        # Create Application (new way in v20)
+        # Create and configure the application
         application = Application.builder().token(token).build()
-
+        
         # Add handlers
         application.add_handler(CommandHandler("start", start))
         application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, get_product))
-
+        
         print("✅ Bot is starting...")
         
-        # Start polling (new way in v20)
+        # Start polling
         application.run_polling()
-
+        
     except Exception as e:
         print(f"❌ Error starting bot: {e}")
         import traceback
