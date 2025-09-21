@@ -14,14 +14,14 @@ def setup_google_sheets():
     try:
         print("🔧 Setting up Google Sheets connection...")
         
-        # Get credentials from environment variable (for Render)
+        # Get credentials from environment variable
         credentials_json = os.environ.get("GOOGLE_CREDENTIALS")
         
         if not credentials_json:
             print("❌ GOOGLE_CREDENTIALS environment variable not set!")
             return False
             
-        print("📋 Using GOOGLE_CREDENTIALS environment variable")
+        print("✅ GOOGLE_CREDENTIALS found")
         
         # Parse JSON from environment variable
         creds_dict = json.loads(credentials_json)
@@ -93,14 +93,15 @@ def get_product(update, context):
 def main():
     print("🚀 Starting Telegram Bot...")
     
-    # Setup Google Sheets first
-    if not setup_google_sheets():
-        print("❌ Failed to setup Google Sheets. Bot will not start.")
-        return
-    
+    # Check if BOT_TOKEN is set
     token = os.environ.get("BOT_TOKEN")
     if not token:
         print("❌ Error: BOT_TOKEN environment variable not set!")
+        return
+    
+    # Setup Google Sheets
+    if not setup_google_sheets():
+        print("❌ Failed to setup Google Sheets. Bot will not start.")
         return
     
     try:
