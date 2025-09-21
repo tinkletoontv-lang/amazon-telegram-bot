@@ -55,11 +55,10 @@ async def get_product(update: Update, context: ContextTypes.DEFAULT_TYPE):
         records = sheet.get_all_records()
         
         for row in records:
-            # Check for product number in various column names
+            # Check for product number
             product_no = str(row.get("product_no", "") or 
                            row.get("Product No", "") or 
-                           row.get("product_number", "") or 
-                           row.get("Product Number", "")).strip()
+                           row.get("product_number", "")).strip()
             
             if product_no == product_number:
                 link = row.get("product_link", "") or row.get("link", "") or row.get("URL", "")
@@ -67,13 +66,13 @@ async def get_product(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 if link:
                     await update.message.reply_text(f"✅ Here is your product link:\n\n🔗 {link}")
                 else:
-                    await update.message.reply_text("❌ Link not found for this product!")
+                    await update.message.reply_text("❌ Link not found!")
                 return
         
-        await update.message.reply_text("❌ Product not found! Please check the product number.")
+        await update.message.reply_text("❌ Product not found!")
         
     except Exception as e:
-        await update.message.reply_text("⚠️ Error accessing product database. Please try again later.")
+        await update.message.reply_text("⚠️ Error. Please try again later.")
         print(f"Error: {e}")
 
 def main():
@@ -82,16 +81,16 @@ def main():
     # Check if BOT_TOKEN is set
     token = os.environ.get("BOT_TOKEN")
     if not token:
-        print("❌ Error: BOT_TOKEN environment variable not set!")
+        print("❌ Error: BOT_TOKEN not set!")
         return
     
     # Setup Google Sheets
     if not setup_google_sheets():
-        print("❌ Failed to setup Google Sheets. Bot will not start.")
+        print("❌ Failed to setup Google Sheets.")
         return
     
     try:
-        # Create and configure the application
+        # Create application
         application = Application.builder().token(token).build()
         
         # Add handlers
@@ -105,8 +104,6 @@ def main():
         
     except Exception as e:
         print(f"❌ Error starting bot: {e}")
-        import traceback
-        traceback.print_exc()
 
 if __name__ == "__main__":
     main()
