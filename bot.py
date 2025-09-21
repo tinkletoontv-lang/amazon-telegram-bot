@@ -1,9 +1,9 @@
 import os
 import gspread
 import json
-import tempfile
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
+from google.oauth2.service_account import Credentials
 
 # Initialize global variables
 sheet = None
@@ -27,15 +27,14 @@ def setup_google_sheets():
         # Parse JSON from environment variable
         creds_dict = json.loads(credentials_json)
 
-        # Use modern google-auth library instead of oauth2client
-        from google.oauth2.service_account import Credentials
+        # Use modern google-auth library
         creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
 
         print("🔑 Credentials loaded, authorizing...")
         client = gspread.authorize(creds)
         print("✅ Authorized with Google Sheets API")
 
-        # Open your sheet (must match Google Sheet name!)
+        # Open your sheet
         sheet = client.open("product_list").sheet1
         print("✅ Successfully connected to Google Sheets")
         return True
@@ -46,10 +45,8 @@ def setup_google_sheets():
         traceback.print_exc()
         return False
 
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("👋 Hello! Send me a product number and I'll give you the link.")
-
 
 async def get_product(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if sheet is None:
@@ -62,7 +59,7 @@ async def get_product(update: Update, context: ContextTypes.DEFAULT_TYPE):
         records = sheet.get_all_records()
 
         for row in records:
-            # Accept multiple possible column names
+            # Check multiple possible column names
             product_no = str(
                 row.get("product_no", "")
                 or row.get("Product No", "")
@@ -90,7 +87,7 @@ async def get_product(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     message = f"✅ Here is your product link:\n\n"
                     message += f"📦 Product: {product_name}\n"
                     message += f"🔢 Number: {product_number}\n"
-                    message += f"🔗 Link: {product_link}"
+                    message += f"🔗 Link: {link}"
 
                     await update.message.reply_text(message)
                 else:
@@ -102,7 +99,6 @@ async def get_product(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text("⚠️ Error accessing product database. Please try again later.")
         print(f"Error: {e}")
-
 
 def main():
     print("🚀 Starting Telegram Bot...")
@@ -117,17 +113,22 @@ def main():
         return
 
     try:
-        app = Application.builder().token(token).build()
+        # Create Application (new way in v20)
+        application = Application.builder().token(token).build()
 
-        app.add_handler(CommandHandler("start", start))
-        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, get_product))
+        # Add handlers
+        application.add_handler(CommandHandler("start", start))
+        application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, get_product))
 
-        print("✅ Bot is running...")
-        app.run_polling()
+        print("✅ Bot is starting...")
+        
+        # Start polling (new way in v20)
+        application.run_polling()
 
     except Exception as e:
         print(f"❌ Error starting bot: {e}")
-
+        import traceback
+        traceback.print_exc()
 
 if __name__ == "__main__":
     main()
