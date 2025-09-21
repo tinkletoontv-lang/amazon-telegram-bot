@@ -77,7 +77,7 @@ def get_product(update, context):
                     message = f"✅ Here is your product link:\n\n"
                     message += f"📦 Product: {product_name}\n"
                     message += f"🔢 Number: {product_number}\n"
-                    message += f"🔗 Link: {link}"
+                    message += f"🔗 Link: {product_link}"
                     
                     update.message.reply_text(message)
                 else:
@@ -120,3 +120,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
