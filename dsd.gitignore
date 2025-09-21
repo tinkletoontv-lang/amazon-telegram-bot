@@ -1,0 +1,14 @@
+credentials.json
+.env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.DS_Store
+.env/
+venv/
+.venv/
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
