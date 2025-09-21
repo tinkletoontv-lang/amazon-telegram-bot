@@ -4,7 +4,6 @@ import json
 import tempfile
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
-from oauth2client.service_account import ServiceAccountCredentials
 
 # Initialize global variables
 sheet = None
@@ -28,16 +27,9 @@ def setup_google_sheets():
         # Parse JSON from environment variable
         creds_dict = json.loads(credentials_json)
 
-        # Write to temporary file
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
-            json.dump(creds_dict, temp_file)
-            temp_path = temp_file.name
-
-        # Use file-based authentication
-        creds = ServiceAccountCredentials.from_json_keyfile_name(temp_path, scope)
-
-        # Clean up temporary file
-        os.unlink(temp_path)
+        # Use modern google-auth library instead of oauth2client
+        from google.oauth2.service_account import Credentials
+        creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
 
         print("🔑 Credentials loaded, authorizing...")
         client = gspread.authorize(creds)
@@ -50,6 +42,8 @@ def setup_google_sheets():
 
     except Exception as e:
         print(f"❌ Error setting up Google Sheets: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 
