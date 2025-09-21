@@ -39,12 +39,12 @@ def get_product(update, context):
                 
                 if link:
                     product_name = row.get("product_name", "") or row.get("Product Name", "") or row.get("Name", "") or f"Product {product_number}"
-                    message = f"✅ **Here is your product link:**\n\n"
-                    message += f"📦 *Product:* {product_name}\n"
-                    message += f"🔢 *Number:* {product_number}\n"
-                    message += f"🔗 *Link:* {link}"
+                    message = f"✅ Here is your product link:\n\n"
+                    message += f"📦 Product: {product_name}\n"
+                    message += f"🔢 Number: {product_number}\n"
+                    message += f"🔗 Link: {link}"
                     
-                    update.message.reply_text(message, parse_mode='Markdown')
+                    update.message.reply_text(message)
                 else:
                     update.message.reply_text("❌ Link not found for this product!")
                 return
