@@ -12,37 +12,62 @@ def setup_google_sheets():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     
     try:
+        print("🔧 Setting up Google Sheets connection...")
+        
         # Method 1: Check if environment variable exists (for Render)
         credentials_json = os.environ.get("GOOGLE_CREDENTIALS")
         
         if credentials_json:
-            # Parse JSON from environment variable
-            creds_dict = json.loads(credentials_json)
+            print("📋 Using GOOGLE_CREDENTIALS environment variable")
+            # Clean the JSON string
+            credentials_json = credentials_json.strip()
             
-            # Write to temporary file
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as temp_file:
-                json.dump(creds_dict, temp_file)
-                temp_path = temp_file.name
+            # Debug: Print first 100 chars to see what we're working with
+            print(f"Credentials preview: {credentials_json[:100]}...")
             
-            # Use file-based authentication
-            from oauth2client.service_account import ServiceAccountCredentials
-            creds = ServiceAccountCredentials.from_json_keyfile_name(temp_path, scope)
-            
-            # Clean up temporary file
-            os.unlink(temp_path)
-            
+            try:
+                # Parse JSON from environment variable
+                creds_dict = json.loads(credentials_json)
+                
+                # Write to temporary file
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as temp_file:
+                    json.dump(creds_dict, temp_file)
+                    temp_path = temp_file.name
+                
+                print(f"📁 Temporary credentials file created: {temp_path}")
+                
+                # Use file-based authentication
+                from oauth2client.service_account import ServiceAccountCredentials
+                creds = ServiceAccountCredentials.from_json_keyfile_name(temp_path, scope)
+                
+                # Clean up temporary file
+                os.unlink(temp_path)
+                
+            except json.JSONDecodeError as e:
+                print(f"❌ JSON decode error: {e}")
+                # Fall back to credentials.json file
+                print("🔄 Falling back to credentials.json file")
+                from oauth2client.service_account import ServiceAccountCredentials
+                creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+                
         else:
             # Method 2: Use credentials.json file (for local development)
+            print("📁 Using credentials.json file")
             from oauth2client.service_account import ServiceAccountCredentials
             creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
         
+        print("🔑 Credentials loaded, authorizing...")
         client = gspread.authorize(creds)
+        print("✅ Authorized with Google Sheets API")
+        
         sheet = client.open("product_list").sheet1
         print("✅ Successfully connected to Google Sheets")
         return True
         
     except Exception as e:
         print(f"❌ Error setting up Google Sheets: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 def start(update, context):
@@ -84,6 +109,8 @@ def get_product(update, context):
         print(f"Error: {e}")
 
 def main():
+    print("🚀 Starting Telegram Bot...")
+    
     # Setup Google Sheets first
     if not setup_google_sheets():
         print("❌ Failed to setup Google Sheets. Bot will not start.")
