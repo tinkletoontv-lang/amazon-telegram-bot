@@ -14,47 +14,29 @@ def setup_google_sheets():
     try:
         print("🔧 Setting up Google Sheets connection...")
         
-        # Method 1: Check if environment variable exists (for Render)
+        # Get credentials from environment variable (for Render)
         credentials_json = os.environ.get("GOOGLE_CREDENTIALS")
         
-        if credentials_json:
-            print("📋 Using GOOGLE_CREDENTIALS environment variable")
-            # Clean the JSON string
-            credentials_json = credentials_json.strip()
+        if not credentials_json:
+            print("❌ GOOGLE_CREDENTIALS environment variable not set!")
+            return False
             
-            # Debug: Print first 100 chars to see what we're working with
-            print(f"Credentials preview: {credentials_json[:100]}...")
-            
-            try:
-                # Parse JSON from environment variable
-                creds_dict = json.loads(credentials_json)
-                
-                # Write to temporary file
-                with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as temp_file:
-                    json.dump(creds_dict, temp_file)
-                    temp_path = temp_file.name
-                
-                print(f"📁 Temporary credentials file created: {temp_path}")
-                
-                # Use file-based authentication
-                from oauth2client.service_account import ServiceAccountCredentials
-                creds = ServiceAccountCredentials.from_json_keyfile_name(temp_path, scope)
-                
-                # Clean up temporary file
-                os.unlink(temp_path)
-                
-            except json.JSONDecodeError as e:
-                print(f"❌ JSON decode error: {e}")
-                # Fall back to credentials.json file
-                print("🔄 Falling back to credentials.json file")
-                from oauth2client.service_account import ServiceAccountCredentials
-                creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
-                
-        else:
-            # Method 2: Use credentials.json file (for local development)
-            print("📁 Using credentials.json file")
-            from oauth2client.service_account import ServiceAccountCredentials
-            creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+        print("📋 Using GOOGLE_CREDENTIALS environment variable")
+        
+        # Parse JSON from environment variable
+        creds_dict = json.loads(credentials_json)
+        
+        # Write to temporary file
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as temp_file:
+            json.dump(creds_dict, temp_file)
+            temp_path = temp_file.name
+        
+        # Use file-based authentication
+        from oauth2client.service_account import ServiceAccountCredentials
+        creds = ServiceAccountCredentials.from_json_keyfile_name(temp_path, scope)
+        
+        # Clean up temporary file
+        os.unlink(temp_path)
         
         print("🔑 Credentials loaded, authorizing...")
         client = gspread.authorize(creds)
